@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IsoGait – Gait Symmetry Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="nav" aria-label="Workflow">
+    <b>IsoGait</b>
+    <a href="#connect" data-view="connect">1 · Connect pods</a>
+    <a href="#setup" data-view="setup">2 · Session setup</a>
+    <a href="#live" data-view="live">3 · Live monitor</a>
+    <a href="#report" data-view="report">4 · Session report</a>
+    <i id="navStatus">Base station: not connected</i>
+  </nav>
+
+  <main class="main">
+    <!-- ============ 1. CONNECT ============ -->
+    <section id="view-connect" class="view">
+      <div class="head">
+        <div><h1>Connect and calibrate pods</h1>
+          <div class="sub">2 active nodes + 1 spare · ESP-NOW receiver on base station (ESP32-S3) · USB 921 600 baud</div></div>
+        <button class="btn" id="toSetup">Continue to session setup</button>
+      </div>
+
+      <div class="card source">
+        <h3>Data source</h3>
+        <div class="source-row">
+          <label class="radio"><input type="radio" name="src" value="sim" checked> <span><strong>Demo mode</strong> — simulated pods, no hardware needed</span></label>
+          <label class="radio"><input type="radio" name="src" value="serial"> <span><strong>Hardware</strong> — base station hub over USB (Chrome / Edge)</span></label>
+          <div class="source-actions">
+            <button class="btn" id="connectBtn">Connect</button>
+            <button class="btn o" id="disconnectBtn" hidden>Disconnect</button>
+          </div>
+        </div>
+        <div class="mut" id="sourceMsg">Demo mode streams the same hub lines your firmware sends: <code>D,node,seq,hub_ms,ax,ay,az,gx,gy,gz,pitch,roll,yaw</code></div>
+      </div>
+
+      <div class="row">
+        <div class="card f1" id="card-L"><h3><span class="L">●</span> Left foot <span class="chip off" data-k="chip">Waiting</span></h3>
+          <div class="kv"><span>Status</span><span data-k="state">Not connected</span></div>
+          <div class="kv"><span>Last packet</span><span data-k="age">—</span></div>
+          <div class="kv"><span>Stream rate</span><span data-k="rate">—</span></div>
+          <div class="kv"><span>Packets dropped</span><span data-k="loss">—</span></div>
+          <div class="mut" style="margin:10px 0 6px" data-k="calText">Calibration: not done</div>
+          <div class="bar"><div data-k="calBar" style="width:0%"></div></div></div>
+        <div class="card f1" id="card-R"><h3><span class="R">●</span> Right foot <span class="chip off" data-k="chip">Waiting</span></h3>
+          <div class="kv"><span>Status</span><span data-k="state">Not connected</span></div>
+          <div class="kv"><span>Last packet</span><span data-k="age">—</span></div>
+          <div class="kv"><span>Stream rate</span><span data-k="rate">—</span></div>
+          <div class="kv"><span>Packets dropped</span><span data-k="loss">—</span></div>
+          <div class="mut" style="margin:10px 0 6px" data-k="calText">Calibration: not done</div>
+          <div class="bar"><div data-k="calBar" style="width:0%"></div></div></div>
+      </div>
+
+      <div class="row">
+        <div class="card" style="flex:2"><h3>Stand-still calibration</h3>
+          <div class="mut" style="font-size:14px;line-height:1.7">1. Place pods on the left and right foot with the pod logo facing outward.<br>2. Ask the participant to stand upright and still for 5 seconds.<br>3. Both pods record their resting angle, which becomes the zero line on the live charts.</div>
+          <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="btn" id="calBtn" disabled>Start 5 s calibration</button>
+            <button class="btn o" id="rescanBtn" disabled>Re-scan pods</button>
+            <span class="mut" id="calMsg"></span>
+          </div></div>
+        <div class="card f1"><h3>Spare pod <span class="chip">Ready</span></h3>
+          <div class="mut" style="font-size:14px;line-height:1.6">If a foot pod fails, flash the spare with that side's firmware (<code>IsoGait_Left</code> or <code>IsoGait_Right</code>). The hub identifies pods by their L / R id, so no change is needed here.</div>
+          <button class="btn o" style="margin-top:12px;width:100%" id="swapBtn">Swap in for a node</button></div>
+      </div>
+    </section>
+
+    <!-- ============ 2. SETUP ============ -->
+    <section id="view-setup" class="view" hidden>
+      <div class="head"><div><h1>Session setup</h1><div class="sub">Treadmill trial protocol and participant consent</div></div></div>
+      <div class="row" style="flex:1;align-items:flex-start">
+        <form class="card grid2" style="flex:2" id="setupForm" onsubmit="return false">
+          <div><label for="f-pid">Participant ID</label><input id="f-pid" value="P-07"></div>
+          <div><label for="f-act">Activity</label><select id="f-act"><option>Jogging</option><option>Walking</option></select></div>
+          <div><label for="f-speed">Treadmill speed (km/h)</label><input id="f-speed" type="number" step="0.5" min="1" max="20" value="8.0"></div>
+          <div><label for="f-dur">Duration (min)</label><input id="f-dur" type="number" step="0.5" min="0.5" max="30" value="2"></div>
+          <div><label for="f-cond">Condition</label><select id="f-cond"><option value="induced">Induced asymmetry</option><option value="baseline">Healthy baseline</option></select></div>
+          <div class="lift"><div><label for="f-lift">Shoe lift (mm)</label><select id="f-lift"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></div>
+            <div><label for="f-side">Side</label><select id="f-side"><option>Left</option><option>Right</option></select></div></div>
+          <div class="span2"><label for="f-notes">Notes</label><input id="f-notes" value=""></div>
+          <div class="span2 check"><input type="checkbox" id="f-video" checked> <label for="f-video">Record synchronised video reference</label></div>
+        </form>
+        <div class="card f1"><h3>Pre-trial checklist</h3>
+          <div class="kv"><label class="cl"><input type="checkbox" id="ck-consent"> Consent signed</label><span class="chip off" id="st-consent">To do</span></div>
+          <div class="kv"><span>2 pods connected</span><span class="chip off" id="st-pods">To do</span></div>
+          <div class="kv"><span>Calibration</span><span class="chip off" id="st-cal">To do</span></div>
+          <div class="kv"><label class="cl"><input type="checkbox" id="ck-video"> Video camera ready</label><span class="chip off" id="st-video">To do</span></div>
+          <button class="btn" style="width:100%;margin-top:20px" id="startBtn">Start trial</button>
+          <button class="btn o" style="width:100%;margin-top:10px" id="saveProtoBtn">Save protocol</button>
+          <div class="mut" style="margin-top:10px" id="startMsg"></div></div>
+      </div>
+    </section>
+
+    <!-- ============ 3. LIVE ============ -->
+    <section id="view-live" class="view" hidden>
+      <div class="head">
+        <div><h1>Live monitor</h1><div class="sub" id="liveSub">No trial running</div></div>
+        <div class="btns"><button class="btn o" id="markBtn">Mark event</button><button class="btn o" id="pauseBtn">Pause</button><button class="btn d" id="stopBtn">Stop trial</button></div>
+      </div>
+      <div class="row" style="min-height:270px">
+        <div class="card si"><h3>Symmetry index</h3><div class="big" id="siVal">—</div>
+          <div style="margin:12px 0"><span class="chip off" id="siChip">Collecting</span></div>
+          <div class="mut" id="siNote">Threshold to flag: below 90%</div></div>
+        <div class="card f1 chartcard"><h3>Foot orientation: <span class="L">left</span> vs <span class="R">right</span> <span class="mut" style="font-weight:400">(pitch, last 4 s, right aligned by half a stride)</span></h3>
+          <canvas id="waveCanvas" role="img" aria-label="Overlaid left and right foot pitch waveforms"></canvas></div>
+      </div>
+      <div class="row" style="flex:1">
+        <div class="card chartcard" style="flex:2"><h3>Symmetry over time</h3><canvas id="trendCanvas" role="img" aria-label="Symmetry index over time with the 90% threshold"></canvas></div>
+        <div class="card f1"><h3>Timing</h3>
+          <div class="kv"><span>Cross-correlation lag</span><span id="tLag">—</span></div>
+          <div class="kv"><span>Peak correlation</span><span id="tCorr">—</span></div>
+          <div class="kv"><span>Cadence</span><span id="tCad">—</span></div>
+          <div class="kv"><span>Weakest metric</span><span id="tWeak">—</span></div></div>
+        <div class="card f1 alerts"><h3>Alerts</h3><div id="alertList"><div class="mut">No alerts yet</div></div></div>
+      </div>
+    </section>
+
+    <!-- ============ 4. REPORT ============ -->
+    <section id="view-report" class="view" hidden>
+      <div class="head">
+        <div><h1>Session report</h1><div class="sub" id="repSub">No trial recorded yet</div></div>
+        <div class="btns noprint"><button class="btn o" id="csvBtn">Export CSV</button><button class="btn" id="pdfBtn">Export PDF report</button></div>
+      </div>
+      <div class="row" style="min-height:200px">
+        <div class="card f1"><h3>Mean symmetry: baseline</h3><div class="big L" id="rBase">—</div><div class="mut" style="margin-top:10px" id="rBaseNote">Healthy baseline run</div></div>
+        <div class="card f1"><h3>Mean symmetry: induced</h3><div class="big R" id="rInd">—</div><div class="mut" style="margin-top:10px" id="rIndNote">Induced asymmetry run</div></div>
+        <div class="card f1"><h3>Drop vs baseline</h3><div class="big" id="rDrop">—</div><div class="mut" style="margin-top:10px" id="rVerdict">—</div></div>
+      </div>
+      <div class="card"><h3>This trial: metric breakdown <span class="mut" style="font-weight:400">(median over 8 s windows)</span></h3><div class="metrics" id="rMetrics"></div></div>
+      <div class="row" style="flex:1">
+        <div class="card" style="flex:2"><h3>Flagged segments</h3>
+          <table><thead><tr><th>Start</th><th>Length</th><th>Lowest symmetry</th><th>Note</th></tr></thead><tbody id="segBody"><tr><td colspan="4" class="mut">No trial analysed yet</td></tr></tbody></table>
+          <div id="flagList" class="mut" style="margin-top:12px"></div></div>
+        <div class="card f1 noprint"><h3>Video check</h3>
+          <video id="vid" controls playsinline hidden></video>
+          <div class="vidph" id="vidPh">Load the video you recorded to check flagged segments</div>
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:end">
+            <div style="flex:1"><label for="vidFile">Video file</label><input type="file" id="vidFile" accept="video/*"></div>
+            <div style="width:110px"><label for="vidOff">Trial starts at (s)</label><input id="vidOff" type="number" step="0.1" value="0"></div>
+          </div>
+          <button class="btn o" style="width:100%;margin-top:12px" id="jumpBtn">Jump to flagged segment</button></div>
+      </div>
+      <div class="card noprint"><h3>Saved sessions <span class="mut" style="font-weight:400">(stored in this browser)</span></h3>
+        <table><thead><tr><th>Date</th><th>Participant</th><th>Condition</th><th>GSI</th><th>Verdict</th><th></th></tr></thead><tbody id="histBody"></tbody></table></div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
