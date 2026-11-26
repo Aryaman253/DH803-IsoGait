@@ -32,7 +32,7 @@
         <h3>Data source</h3>
         <div class="source-row">
           <label class="radio"><input type="radio" name="src" value="sim" checked> <span><strong>Demo mode</strong> — simulated pods, no hardware needed</span></label>
-          <label class="radio"><input type="radio" name="src" value="serial"> <span><strong>Hardware</strong> — base station hub over USB (Chrome / Edge)</span></label>
+          <label class="radio" id="hwOption"><input type="radio" name="src" value="serial"> <span><strong>Hardware</strong> — base station hub over USB (Chrome / Edge)</span></label>
           <div class="source-actions">
             <button class="btn" id="connectBtn">Connect</button>
             <button class="btn o" id="disconnectBtn" hidden>Disconnect</button>
@@ -136,7 +136,7 @@
       <div class="card"><h3>This trial: metric breakdown <span class="mut" style="font-weight:400">(median over 8 s windows)</span></h3><div class="metrics" id="rMetrics"></div></div>
       <div class="row" style="flex:1">
         <div class="card" style="flex:2"><h3>Flagged segments</h3>
-          <table><thead><tr><th>Start</th><th>Length</th><th>Lowest symmetry</th><th>Note</th></tr></thead><tbody id="segBody"><tr><td colspan="4" class="mut">No trial analysed yet</td></tr></tbody></table>
+          <div class="tablewrap"><table><thead><tr><th>Start</th><th>Length</th><th>Lowest symmetry</th><th>Note</th></tr></thead><tbody id="segBody"><tr><td colspan="4" class="mut">No trial analysed yet</td></tr></tbody></table></div>
           <div id="flagList" class="mut" style="margin-top:12px"></div></div>
         <div class="card f1 noprint"><h3>Video check</h3>
           <video id="vid" controls playsinline hidden></video>
@@ -148,7 +148,7 @@
           <button class="btn o" style="width:100%;margin-top:12px" id="jumpBtn">Jump to flagged segment</button></div>
       </div>
       <div class="card noprint"><h3>Saved sessions <span class="mut" style="font-weight:400">(stored in this browser)</span></h3>
-        <table><thead><tr><th>Date</th><th>Participant</th><th>Condition</th><th>GSI</th><th>Verdict</th><th></th></tr></thead><tbody id="histBody"></tbody></table></div>
+        <div class="tablewrap"><table><thead><tr><th>Date</th><th>Participant</th><th>Condition</th><th>GSI</th><th>Verdict</th><th></th></tr></thead><tbody id="histBody"></tbody></table></div></div>
     </section>
   </main>
 </div>

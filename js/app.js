@@ -1,6 +1,6 @@
 // IsoGait web app — UI wiring for the four screens.
 import { CFG, KEYS, NAMES, METRIC_LABELS, PRIMARY, analyze, flaggedSegments, verdict } from "./engine.js";
-import { Recorder, LiveAnalyzer, SerialSource, webSerialSupported } from "./recorder.js";
+import { Recorder, LiveAnalyzer, SerialSource, webSerialSupported, isMobile } from "./recorder.js";
 import { SimSource, simParamsFromSetup } from "./sim.js";
 
 const $ = (id) => document.getElementById(id);
@@ -48,6 +48,8 @@ function show(view) {
   if (!VIEWS.includes(view)) view = "connect";
   VIEWS.forEach((v) => { $("view-" + v).hidden = v !== view; });
   document.querySelectorAll(".nav a").forEach((a) => a.classList.toggle("on", a.dataset.view === view));
+  const nav = document.querySelector(".nav"), on = nav.querySelector("a.on");
+  if (on && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2, behavior: "smooth" });
   if (location.hash !== "#" + view) history.replaceState(null, "", "#" + view);
   if (view === "live") requestAnimationFrame(drawCharts);
   if (view === "report") renderHistory();
@@ -434,6 +436,12 @@ function jumpToSegment() {
 
 // ------------------------------------------------------------------ wiring
 function init() {
+  if (!webSerialSupported()) {
+    const hw = $("hwOption"); hw.classList.add("disabled"); hw.querySelector("input").disabled = true;
+    hw.querySelector("span").innerHTML = isMobile()
+      ? "<strong>Hardware</strong> — needs a laptop with Chrome / Edge (phones can't open the hub's USB port)"
+      : "<strong>Hardware</strong> — needs Chrome or Edge (this browser can't open USB serial ports)";
+  }
   document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); show(a.dataset.view); }));
   $("toSetup").onclick = () => show("setup");
   $("connectBtn").onclick = connect;

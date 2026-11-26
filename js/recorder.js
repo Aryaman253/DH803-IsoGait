@@ -140,7 +140,8 @@ export class LiveAnalyzer {
 }
 
 // ---- Web Serial line source (Chrome / Edge on desktop) -----------------------------------
-export const webSerialSupported = () => "serial" in navigator;
+export const isMobile = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ""));
+export const webSerialSupported = () => "serial" in navigator && !isMobile();
 
 export class SerialSource {
   constructor(onLine, onError) { this.onLine = onLine; this.onError = onError; this.port = null; this.reader = null; this.running = false; this.t0 = performance.now(); }
